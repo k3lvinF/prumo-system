@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync} from 'node:fs';
+import {menuCatalogHandlers} from '../lib/menu-catalog-api';
+import {proteinChoices,preparationMatches} from '../lib/menu-catalog';
+
+const sql=new DatabaseSync(':memory:');
+for(const file of ['drizzle/0000_light_ben_urich.sql','drizzle/0001_harsh_nebula.sql','drizzle/0002_previous_paper_doll.sql'])for(const statement of readFileSync(file,'utf8').split('--> statement-breakpoint'))if(statement.trim())sql.exec(statement);
+const db={prepare:(query:string)=>({bind:(...args:any[])=>({first:async()=>sql.prepare(query).get(...args),all:async()=>({results:sql.prepare(query).all(...args)}),run:async()=>({meta:{changes:Number(sql.prepare(query).run(...args).changes)}})})})};
+const api=(owner:string|null)=>menuCatalogHandlers(db,async()=>owner?{userId:owner,email:owner}:null);
+const request=(data:any)=>new Request('https://example.test/api/catalog',{method:'POST',headers:{'content-type':'application/json','x-prumo-request':'1',origin:'https://example.test'},body:JSON.stringify({data})});
+assert.equal((await api(null).GET()).status,401);
+const a=api('a@example.test'),b=api('b@example.test');
+const initial=await (await a.GET()).json() as any;
+assert.equal(initial.version,0);assert.deepEqual(proteinChoices,['Filé de peito de frango','Linguiça tipo toscana','Bisteca suína','Bife bovino','Peito de frango com osso','Rabada']);
+assert.ok(preparationMatches('Filé de peito de frango assado','Filé de peito de frango'));
+const menu={...initial,menus:[{id:crypto.randomUUID(),name:'Campo segunda',audience:'campo',items:['Arroz','Feijão','Bife bovino']}]};
+const saved=await a.POST(request(menu));assert.equal(saved.status,200,await saved.clone().text());assert.equal(((await saved.json()) as any).version,1);
+assert.equal((await a.POST(request(menu))).status,409);
+assert.equal(((await b.GET()).status),200);assert.equal(((await (await b.GET()).json()) as any).menus.length,0);
+console.log('PASS: persistent menu catalog, six protein choices, audience separation, account isolation and version conflicts');
+sql.close();

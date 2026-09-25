@@ -1,0 +1,12 @@
+const encoder=new TextEncoder();
+const crcTable=Uint32Array.from({length:256},(_,n)=>{for(let i=0;i<8;i++)n=n&1?0xedb88320^(n>>>1):n>>>1;return n>>>0});
+function header(size:number){const bytes=new Uint8Array(size),view=new DataView(bytes.buffer);return {bytes,view}}
+type ZipFile={name:string;stream:ReadableStream<Uint8Array>};
+// ZIP STORE with data descriptors: files are copied sequentially without
+// collecting their contents into the Worker's 128 MB heap.
+export function zipStream(files:AsyncIterable<ZipFile>){async function* generate(){let position=0;const central:Uint8Array[]=[];let count=0;
+ for await(const file of files){const name=encoder.encode(file.name),offset=position,h=header(30+name.length);h.view.setUint32(0,0x04034b50,true);h.view.setUint16(4,20,true);h.view.setUint16(6,0x808,true);h.view.setUint16(10,0,true);h.view.setUint16(12,33,true);h.view.setUint16(26,name.length,true);h.bytes.set(name,30);yield h.bytes;position+=h.bytes.length;let crc=0xffffffff,size=0;const reader=file.stream.getReader();try{while(true){const r=await reader.read();if(r.done)break;for(const b of r.value)crc=crcTable[(crc^b)&255]^(crc>>>8);size+=r.value.length;position+=r.value.length;yield r.value}}finally{reader.releaseLock()}crc=(crc^0xffffffff)>>>0;const d=header(16);d.view.setUint32(0,0x08074b50,true);d.view.setUint32(4,crc,true);d.view.setUint32(8,size,true);d.view.setUint32(12,size,true);yield d.bytes;position+=16;
+ const c=header(46+name.length);c.view.setUint32(0,0x02014b50,true);c.view.setUint16(4,20,true);c.view.setUint16(6,20,true);c.view.setUint16(8,0x808,true);c.view.setUint16(14,33,true);c.view.setUint32(16,crc,true);c.view.setUint32(20,size,true);c.view.setUint32(24,size,true);c.view.setUint16(28,name.length,true);c.view.setUint32(42,offset,true);c.bytes.set(name,46);central.push(c.bytes);count++;
+ }const start=position;for(const c of central){yield c;position+=c.length}const end=header(22);end.view.setUint32(0,0x06054b50,true);end.view.setUint16(8,count,true);end.view.setUint16(10,count,true);end.view.setUint32(12,position-start,true);end.view.setUint32(16,start,true);yield end.bytes;
+ }const iterator=generate();return new ReadableStream<Uint8Array>({async pull(controller){try{const r=await iterator.next();if(r.done)controller.close();else controller.enqueue(r.value)}catch(e){controller.error(e)}},async cancel(){await iterator.return(undefined)}})}
+export function bytesStream(bytes:Uint8Array){return new ReadableStream<Uint8Array>({start(c){c.enqueue(bytes);c.close()}})}

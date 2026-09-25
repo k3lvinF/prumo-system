@@ -1,0 +1,6 @@
+import assert from 'node:assert/strict';
+import {makeHoursReport} from '../lib/hours-report';
+import {monthSnapshot,defaultHourSettings} from '../lib/hours';
+const start=Date.parse('2026-09-09T09:00:00-03:00'),end=Date.parse('2026-09-09T17:30:00-03:00');
+const snap=monthSnapshot({settings:{...defaultHourSettings,name:'Profissional'},periods:[{id:'period',activity:'Revisão de cardápio\nAdequação de per capita',start,end,pause:start+3.5*3600000,resume:start+5*3600000,rate:8000,production:'',reviewed:0,manual_at:end+86400000}],evidence:[{id:'proof',period:'period',name:'prova.pdf',hash:'hash',size:100,at:'2026-09-10'}],archives:[],revisions:[],serverNow:end},'2026-09');
+const doc=makeHoursReport(snap);assert.ok(doc.output().startsWith('%PDF-'));const table=(doc as any).lastAutoTable;assert.equal(table.body.length,1);const cells=table.body[0].cells;assert.ok(cells[0].raw.includes('Revisão de cardápio'));assert.ok(!cells[0].raw.includes('Retroativo'));assert.ok(cells[1].raw.includes('Pausa:'));assert.ok(!cells[1].raw.includes('10/09/2026'));assert.ok(cells[2].raw.includes('07:00:00'));assert.ok(!Object.values(cells).some((c:any)=>c.raw.includes('prova.pdf')));console.log('PDF gerado com atividades e horas, sem comprovantes ou data do lançamento.');
