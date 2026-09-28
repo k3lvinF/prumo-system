@@ -1,0 +1,5 @@
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync} from 'node:fs';
+
+const db=new DatabaseSync(':memory:'),apply=(file:string)=>readFileSync(file,'utf8').split('--> statement-breakpoint').forEach(sql=>{if(sql.trim())db.exec(sql)});apply('drizzle/0000_light_ben_urich.sql');apply('drizzle/0001_harsh_nebula.sql');db.prepare('INSERT INTO productions VALUES(?,?,?,?,?,?)').run('preservar','owner','2026-09-27','{}',1,'now');for(const file of ['drizzle/0002_previous_paper_doll.sql','drizzle/0003_left_thing.sql','drizzle/0004_aspiring_magma.sql','drizzle/0005_overrated_the_santerians.sql','drizzle/0006_workable_inertia.sql','drizzle/0007_left_leo.sql','drizzle/0008_freezing_eternity.sql'])apply(file);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM productions').get()!.n,1);assert.ok(db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name='data_fix_log'").get());console.log('PASS: migrações aditivas posteriores ao legado preservam produções e criam data_fix_log');db.close();
