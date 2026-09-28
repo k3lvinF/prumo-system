@@ -22,7 +22,8 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
   const requestHeaders = await headers();
   const userId = requestHeaders.get(USER_ID_HEADER);
   const email = requestHeaders.get(USER_EMAIL_HEADER);
-  if (!email) return null;
+  const normalizedEmail = email?.trim().toLowerCase();
+  if (!normalizedEmail || normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return null;
 
   const encodedFullName = requestHeaders.get(USER_FULL_NAME_HEADER);
   const fullName =
@@ -35,9 +36,9 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
     // Some authenticated iOS browser sessions currently omit the stable ID.
     // The verified email is used as a cross-device fallback; authorization is
     // still enforced by the private Sites access policy before this request.
-    userId: userId ?? email.trim().toLowerCase(),
-    displayName: fullName ?? email,
-    email,
+    userId: userId ?? normalizedEmail,
+    displayName: fullName ?? normalizedEmail,
+    email: normalizedEmail,
     fullName,
   };
 }
