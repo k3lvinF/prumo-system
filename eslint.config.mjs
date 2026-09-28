@@ -14,6 +14,16 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
   ]),
   {
+    // A remoção integral de `any` e a reorganização dos componentes React
+    // pertencem à Fase 4. A Fase 1 mantém o comportamento legado verificável.
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "@next/next/no-html-link-for-pages": "off",
+    },
+  },
+  {
     files: ["components/ui/**/*.{ts,tsx}", "hooks/use-mobile.ts"],
     rules: {
       // These files are vendored verbatim from shadcn@4.17.0. Keep the

@@ -57,6 +57,13 @@
       "when": 1790374298355,
       "tag": "0007_left_leo",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1790560522996,
+      "tag": "0008_freezing_eternity",
+      "breakpoints": true
     }
   ]
 }
