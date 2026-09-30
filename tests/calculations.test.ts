@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {fresh,net,prepStats,totals,num,Production,Entry} from '../lib/uan';
+import {fresh,net,prepStats,totals,num,Entry} from '../lib/uan';
 const s=fresh('2026-09-10','RT teste');s.preps=[{id:'rice',name:'Arroz',raw:10,clean:9,portion:160,cost:100,costComplete:true,closed:true,remaining:2,loss:1,note:''}];s.works=[{id:'w',name:'Obra teste',worker:10,admin:0,servedWorker:10,servedAdmin:0,vehicle:'V1',driver:'Motorista'}];
 const e:Entry={id:'e',prep:'rice',work:'w',type:'GN M',quantity:2,tare:1,gross:10,temperature:80,vehicle:'V1',driver:'Motorista',operator:'RT teste',at:new Date().toISOString(),created:new Date().toISOString(),note:'',cancelled:false};s.entries=[e];
 assert.equal(num('1,25'),1.25);assert.equal(num(''),null);assert.equal(num('abc'),null);assert.equal(net(e),8);assert.equal(prepStats(s,s.preps[0]).ready,10);assert.equal(prepStats(s,s.preps[0]).costKg,10);assert.equal(prepStats(s,s.preps[0]).yield,1);assert.equal(totals(s).planned,10);assert.equal(totals(s).cmv,100/109*100);assert.equal(totals(s).margin,null);

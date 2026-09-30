@@ -44,5 +44,13 @@ next-env.d.ts
 /.codex/
 /outputs/
 /work/
+/tmp/
+/.task-tmp/
+/.openai/
+/backups/
+/reports/data-fixes/*.json
+/reports/data-fixes/*.md
+/work/
+/.sites-runtime/
 
 *.tsbuildinfo

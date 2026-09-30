@@ -8,15 +8,15 @@ const migrate=(file:string)=>readFileSync(file,'utf8').split('--> statement-brea
 migrate('drizzle/0000_light_ben_urich.sql');
 sql.prepare('INSERT INTO productions VALUES(?,?,?,?,?,?)').run('test','owner','2026-09-11','{}',1,'now');
 migrate('drizzle/0001_harsh_nebula.sql');
-assert.equal(sql.prepare('SELECT COUNT(*) AS n FROM productions').get()!.n,0);
-assert.equal(sql.prepare('SELECT affected FROM system_events').get()!.affected,1);
+assert.equal(sql.prepare('SELECT COUNT(*) AS n FROM productions').get()!.n,1);
+assert.equal(sql.prepare('SELECT affected FROM system_events').get()!.affected,0);
 const db={prepare:(q:string)=>({bind:(...args:any[])=>({
  first:async()=>sql.prepare(q).get(...args),
  all:async()=>({results:sql.prepare(q).all(...args)}),
  run:async()=>({meta:{changes:Number(sql.prepare(q).run(...args).changes)}})
 })})};
 const api=(owner:string|null)=>productionHandlers(db,async()=>owner?{userId:owner}:null);
-const req=(data:any,headers:Record<string,string>={})=>new Request('https://example.test/api/productions',{method:'POST',headers:{'content-type':'application/json','x-prumo-request':'1',origin:'https://example.test',...headers},body:typeof data==='string'?data:JSON.stringify({data,action:'Salvar teste'})});
+const req=(data:any,headers:Record<string,string>={})=>new Request('https://example.test/api/productions',{method:'POST',headers:{'content-type':'application/json','x-prumo-request':'1',origin:'https://example.test',...headers},body:typeof data==='string'?data:JSON.stringify({data,action:'Salvar teste',reason:'Correção operacional autorizada'})});
 let count=2;async function status(p:Promise<Response>,expected:number){const r=await p;assert.equal(r.status,expected,await r.clone().text());count++;return r;}
 const a=api('A'),b=api('B');
 await status(api(null).GET(new Request('https://example.test/api/productions')),401);
@@ -67,10 +67,11 @@ sql.close();
 const mobileSql=new DatabaseSync(':memory:');
 for(const part of readFileSync('drizzle/0000_light_ben_urich.sql','utf8').split('--> statement-breakpoint'))if(part.trim())mobileSql.exec(part);
 for(const part of readFileSync('drizzle/0001_harsh_nebula.sql','utf8').split('--> statement-breakpoint'))if(part.trim())mobileSql.exec(part);
+for(const part of readFileSync('drizzle/0002_previous_paper_doll.sql','utf8').split('--> statement-breakpoint'))if(part.trim())mobileSql.exec(part);
 const legacy=fresh('2026-09-11','RT');legacy.version=1;
 mobileSql.prepare('INSERT INTO productions VALUES(?,?,?,?,?,?)').run(legacy.id,'legacy-account-id',legacy.date,JSON.stringify(legacy),legacy.version,new Date().toISOString());
 const mobileDb={prepare:(q:string)=>({bind:(...args:any[])=>({first:async()=>mobileSql.prepare(q).get(...args),all:async()=>({results:mobileSql.prepare(q).all(...args)}),run:async()=>({meta:{changes:Number(mobileSql.prepare(q).run(...args).changes)}})})})};
-const mobile=productionHandlers(mobileDb,async()=>({userId:'kelvin@example.test',email:'kelvin@example.test'}));
+const mobile=productionHandlers(mobileDb,async()=>({userId:'legacy-account-id',email:'kelvin@example.test'}));
 const mobileList=await mobile.GET(new Request('https://example.test/api/productions'));
 assert.equal(mobileList.status,200);assert.equal(((await mobileList.json()) as unknown[]).length,1);
 assert.equal(mobileSql.prepare('SELECT owner FROM productions').get()!.owner,'kelvin@example.test');
