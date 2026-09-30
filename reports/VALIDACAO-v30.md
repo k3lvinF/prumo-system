@@ -57,4 +57,15 @@ A cópia restaurada recebeu localmente as migrações 0008 e 0009, os scripts A1
 
 ## Gate
 
-O código e os ensaios locais estão prontos. A próxima etapa modifica o banco e a versão publicada e exige a confirmação final do proprietário prevista no roteiro aprovado.
+Autorização final do proprietário registrada em 30/09/2026.
+
+## Conclusão em produção
+
+- Checkpoint pré-migração concluído e restaurado com `integrity_check=ok` e zero violações de chave estrangeira. A tabela transitória `request_limits` foi deliberadamente restaurada vazia porque muda durante a própria exportação e não contém dados de negócio.
+- Diagnóstico do checkpoint: C1=0, M5=0, A1=1 e A2=0, conforme o ensaio anterior.
+- Migrações 0008 e 0009 aplicadas pelo fluxo de publicação do Sites.
+- Versão 31 publicada de forma privada em `https://uan-controle-producao.kelvinribeiro69.chatgpt.site`.
+- Banco publicado confirmado com as tabelas `accounts`, `account_identities`, `data_fix_log`, `production_audit`, `production_entries`, `technical_sheets`, `technical_sheet_revisions` e `equipment`.
+- Credenciais e rotas temporárias de backup foram removidas; permanecem somente as variáveis privadas do módulo de horas.
+- O preenchimento A1 é idempotente e será concluído automaticamente no primeiro acesso autenticado ao histórico; o JSON original permanece a fonte de leitura durante a janela de comparação de 30 dias.
+- Pull request nº 1 aprovado e integrado à `main` no commit `b40595636e39ccc266f73ab192128bb32190b6d3`.
