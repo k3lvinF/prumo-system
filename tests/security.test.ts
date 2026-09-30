@@ -8,15 +8,15 @@ const migrate=(file:string)=>readFileSync(file,'utf8').split('--> statement-brea
 migrate('drizzle/0000_light_ben_urich.sql');
 sql.prepare('INSERT INTO productions VALUES(?,?,?,?,?,?)').run('test','owner','2026-09-11','{}',1,'now');
 migrate('drizzle/0001_harsh_nebula.sql');
-assert.equal(sql.prepare('SELECT COUNT(*) AS n FROM productions').get()!.n,0);
-assert.equal(sql.prepare('SELECT affected FROM system_events').get()!.affected,1);
+assert.equal(sql.prepare('SELECT COUNT(*) AS n FROM productions').get()!.n,1);
+assert.equal(sql.prepare('SELECT affected FROM system_events').get()!.affected,0);
 const db={prepare:(q:string)=>({bind:(...args:any[])=>({
  first:async()=>sql.prepare(q).get(...args),
  all:async()=>({results:sql.prepare(q).all(...args)}),
  run:async()=>({meta:{changes:Number(sql.prepare(q).run(...args).changes)}})
 })})};
 const api=(owner:string|null)=>productionHandlers(db,async()=>owner?{userId:owner}:null);
-const req=(data:any,headers:Record<string,string>={})=>new Request('https://example.test/api/productions',{method:'POST',headers:{'content-type':'application/json','x-prumo-request':'1',origin:'https://example.test',...headers},body:typeof data==='string'?data:JSON.stringify({data,action:'Salvar teste'})});
+const req=(data:any,headers:Record<string,string>={})=>new Request('https://example.test/api/productions',{method:'POST',headers:{'content-type':'application/json','x-prumo-request':'1',origin:'https://example.test',...headers},body:typeof data==='string'?data:JSON.stringify({data,action:'Salvar teste',reason:'Correção operacional autorizada'})});
 let count=2;async function status(p:Promise<Response>,expected:number){const r=await p;assert.equal(r.status,expected,await r.clone().text());count++;return r;}
 const a=api('A'),b=api('B');
 await status(api(null).GET(new Request('https://example.test/api/productions')),401);

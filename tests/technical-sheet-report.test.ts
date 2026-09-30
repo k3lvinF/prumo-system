@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';
+import {writeFileSync} from 'node:fs';
+import {makeTechnicalSheetReport} from '../lib/technical-sheet-report';
+import {emptyNutrition,type Equipment,type TechnicalSheet} from '../lib/menu-catalog';
+
+const equipment:Equipment[]=Array.from({length:20},(_,index)=>({id:crypto.randomUUID(),name:'Equipamento profissional '+(index+1),category:'Panela',number:String(index+1).padStart(2,'0'),size:'Modelo industrial de grande capacidade',weightKg:12.5,capacity:'200 L',notes:''}));
+const sheet:TechnicalSheet={id:crypto.randomUUID(),preparation:'Preparação de teste com nome extenso para validar a quebra de linha',code:'FT-TESTE-001',category:'Prato principal',responsible:'Responsável técnico',prepMinutes:90,cookMinutes:180,yieldKg:150,portions:1000,portionGrams:150,equipmentIds:equipment.map(item=>item.id),nutrition:{...emptyNutrition(),energyKcal:320,carbohydrates:45,protein:22,totalFat:8,saturatedFat:2,fiber:5,sodium:480,calcium:80,iron:3},photoVersion:null,ingredients:Array.from({length:60},(_,index)=>({name:'Ingrediente detalhado '+(index+1),qty:index+1,unit:'kg',unitPrice:5.25,priceUnit:'kg'})),additionalCosts:Array.from({length:20},(_,index)=>({name:'Custo adicional '+(index+1),value:index+1})),instructions:'Higienizar e conferir os insumos. '.repeat(100),version:7,revision:7,updatedAt:'2026-09-30T12:00:00.000Z',updatedBy:'conta'};
+const doc=makeTechnicalSheetReport(sheet,equipment),bytes=new Uint8Array(doc.output('arraybuffer'));assert.ok(doc.getNumberOfPages()>=4);assert.ok(bytes.length>20_000);writeFileSync('work/technical-sheet-layout.pdf',bytes);console.log(`PASS: ficha técnica extensa gerada em ${doc.getNumberOfPages()} páginas sem truncar tabelas.`);

@@ -12,6 +12,6 @@ CREATE TABLE `system_events` (
 	`at` text NOT NULL
 );
 --> statement-breakpoint
-INSERT INTO system_events(id,event,affected,at) SELECT 'reset-before-real-data-2026-09-11','User-authorized reset of all test productions',COUNT(*),strftime('%Y-%m-%dT%H:%M:%fZ','now') FROM productions;
+INSERT OR IGNORE INTO system_events(id,event,affected,at) SELECT 'reset-before-real-data-2026-09-11','Historical reset marker; no rows deleted by this migration',0,strftime('%Y-%m-%dT%H:%M:%fZ','now') FROM productions LIMIT 1;
 --> statement-breakpoint
-DELETE FROM productions;
+-- Historical destructive reset removed. Migrations must preserve all registered data.
