@@ -2,8 +2,9 @@
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import { backupGET } from '../../lib/backup-api';
 const db = new DatabaseSync(':memory:');
-db.exec('CREATE TABLE productions(id TEXT PRIMARY KEY, data TEXT); CREATE TABLE hour_evidence(id TEXT PRIMARY KEY);');
+db.exec('CREATE TABLE productions(id TEXT PRIMARY KEY, data TEXT); CREATE TABLE hour_evidence(id TEXT PRIMARY KEY); CREATE TABLE request_limits(id TEXT PRIMARY KEY);');
 db.prepare('INSERT INTO productions VALUES(?,?)').run('sample', "ação 'teste'\0fim");
+db.prepare('INSERT INTO request_limits VALUES(?)').run('before-export');
 let schemaRequests = 0;
 function prepare(query: string) {
   let values: SQLInputValue[] = [];
@@ -28,6 +29,9 @@ globalThis.fetch = async (input, init) => {
   const request = new Request(input, init);
   const url = new URL(request.url);
   if (url.origin !== 'https://backup.invalid') throw Error('Unexpected origin');
+  if (url.searchParams.get('mode') === 'rows' && url.searchParams.get('table') === 'productions') {
+    db.prepare('INSERT OR IGNORE INTO request_limits VALUES(?)').run('during-export');
+  }
   if (url.searchParams.get('mode') === 'schema' && ++schemaRequests === 2 && process.env.BACKUP_TEST_CHANGE === '1') {
     db.prepare('UPDATE productions SET data=? WHERE id=?').run('changed', 'sample');
   }

@@ -21,6 +21,10 @@ input.close();
 if (!credentials.siteToken || !credentials.backupToken) throw Error('Credenciais de exportação ausentes.');
 const quote = name => '"' + name.replaceAll('"', '""') + '"';
 const digest = value => createHash('sha256').update(value).digest('hex');
+// Rate-limit buckets are runtime-only and mutate as the export endpoint is
+// called. Restoring stale buckets is undesirable, so preserve the table
+// schema but deliberately start it empty in a recovery database.
+const volatileTables = new Set(['request_limits']);
 async function request(params) {
   const url = new URL('/api/admin-backup', origin);
   url.search = new URLSearchParams(params).toString();
@@ -54,7 +58,7 @@ async function tableData(table, sqlFile, local) {
     if (page.nextOffset !== offset + 1 || page.rows.length !== 1) throw Error('Paginação inválida.');
     offset = page.nextOffset;
   }
-  if (count !== table.count) throw Error('Contagem mudou durante a cópia. Reinicie sem coletas simultâneas.');
+  if (count !== table.count) throw Error(`Contagem de ${table.name} mudou durante a cópia (${table.count} → ${count}). Reinicie sem coletas simultâneas.`);
   return { count, sha256: hash.digest('hex') };
 }
 async function fileList() {
@@ -77,7 +81,7 @@ if (schema.format !== 'prumo-logical-backup-v1') throw Error('Formato de backup 
 const sqlFile = await open(resolve(directory, 'd1.sql'), 'wx', 0o600);
 const local = new DatabaseSync(resolve(directory, 'restored.sqlite'));
 const report = { format: schema.format, startedAt: new Date().toISOString(), complete: false,
-  atomicSnapshot: false, requiresQuietWindow: true, tables: {}, files: [] };
+  atomicSnapshot: false, requiresQuietWindow: true, excludedVolatileTables: [...volatileTables], tables: {}, files: [] };
 try {
   await writeFile(resolve(directory, 'schema.json'), JSON.stringify(schema), { mode: 0o600, flag: 'wx' });
   await sqlFile.write('PRAGMA foreign_keys=OFF;\n');
@@ -86,7 +90,11 @@ try {
     await sqlFile.write(object.sql + ';\n');
     local.exec(object.sql);
   }
-  for (const table of schema.tables) report.tables[table.name] = await tableData(table, sqlFile, local);
+  for (const table of schema.tables) {
+    report.tables[table.name] = volatileTables.has(table.name)
+      ? { count: 0, sourceCount: table.count, sha256: digest(''), excluded: true }
+      : await tableData(table, sqlFile, local);
+  }
   for (const object of schema.objects.filter(object => object.type !== 'table')) {
     await sqlFile.write(object.sql + ';\n');
     local.exec(object.sql);
@@ -106,8 +114,10 @@ try {
   // Independent second read catches concurrent changes. This is not a native
   // transactional snapshot; operations must be paused for the entire export.
   const secondSchema = await json({ mode: 'schema' });
-  if (JSON.stringify(schema) !== JSON.stringify(secondSchema)) throw Error('Estrutura/contagens mudaram durante a cópia.');
-  for (const table of schema.tables) {
+  const stableSchema = value => JSON.stringify({ objects: value.objects,
+    tables: value.tables.filter(table => !volatileTables.has(table.name)) });
+  if (stableSchema(schema) !== stableSchema(secondSchema)) throw Error('Estrutura/contagens mudaram durante a cópia.');
+  for (const table of schema.tables.filter(table => !volatileTables.has(table.name))) {
     const verified = await tableData(table);
     if (JSON.stringify(verified) !== JSON.stringify(report.tables[table.name])) throw Error('Dados mudaram durante a cópia.');
     const restored = local.prepare(`SELECT COUNT(*) AS n FROM ${quote(table.name)}`).get().n;
