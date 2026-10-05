@@ -46,7 +46,8 @@ next-env.d.ts
 /work/
 /tmp/
 /.task-tmp/
-/.openai/
+/.openai/*
+!/.openai/hosting.example.json
 /backups/
 /reports/data-fixes/*.json
 /reports/data-fixes/*.md

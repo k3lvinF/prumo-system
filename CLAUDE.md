@@ -1,6 +1,9 @@
-# PRUMO SYSTEM — roteiro de correção aprovado
+# PRUMO SYSTEM — regras de manutenção
 
-Esta branch implementa as correções em fases. A autorização atual cobre apenas a Fase 1 em branch e PR. Não faça merge em `main`, migrações remotas, scripts `--apply` ou deploy sem nova confirmação do proprietário.
+O sistema está publicado. Toda evolução deve preservar os dados existentes,
+passar pelo CI e manter a hospedagem privada. A autorização do proprietário
+vale para o escopo solicitado em cada tarefa; exclusões, resets e migrações
+destrutivas continuam proibidos sem autorização específica.
 
 ## Regras invioláveis
 
@@ -22,18 +25,16 @@ Esta branch implementa as correções em fases. A autorização atual cobre apen
 
 ## Fluxo Git
 
-- Base: `claude-review-v29`.
-- Trabalho: `fix/v30-correcoes`.
-- Um commit por achado ou grupo pequeno coeso.
+- Base: `main`.
+- Trabalho: uma branch curta por alteração.
+- Um commit por grupo pequeno e coeso.
 - Nunca use `push --force`.
-- Abra PR para `main`, mas não faça merge sem autorização.
+- Abra PR para `main` e só integre depois dos checks obrigatórios.
 
 ## Verificação obrigatória
 
 ```bash
-pnpm test
-pnpm lint
-pnpm build
+pnpm check
 ```
 
 Não declare uma fase concluída se algum comando falhar. Backups, relatórios reais e artefatos locais não devem ser commitados.
