@@ -1,6 +1,9 @@
 # PRUMO SYSTEM
 
-Mobile-first production collection for transported meals. Authenticated records are scoped to the account through ChatGPT identity headers. Cloudflare D1 stores production documents with optimistic version checks and server-appended operation history.
+Sistema móvel para coleta e controle de produção de refeições transportadas.
+Os registros autenticados são isolados por conta. O Cloudflare D1 preserva
+produções, fichas técnicas, equipamentos, auditoria e horas; o R2 armazena
+fotos e comprovantes.
 
 ## Features
 
@@ -14,16 +17,17 @@ Mobile-first production collection for transported meals. Authenticated records 
 
 CMV is a production management ratio, not accounting inventory valuation. Revenue assumes served meals are billable at the configured prices. Taxes are user-declared effective rates; unknown values prevent a completed managerial result. R$5.30 is a presumed comparison supplied by the user.
 
-## Verification
+## Verificação
 
-TypeScript check and production build completed. Calculation tests in tests/calculations.test.ts cover tare multiplication, missing values, yield, CMV, cost completeness, sample coverage and cancellations. PDF generation was inspected using a synthetic dataset of 70 sites and five preparations. Synthetic data is never inserted into the app database.
+Execute `pnpm check` antes de abrir ou integrar um pull request. O comando
+valida migrações, TypeScript, lint, testes e build de produção. Dados sintéticos
+de teste nunca são inseridos no banco publicado.
 
 ## Storage
 
 Schema is in db/schema.ts; generated SQL migrations are in drizzle. API: app/api/productions/route.ts. Calculations: lib/uan.ts. PDF: lib/report.ts. UI: components/uan/workspace.tsx. Limits: 80 preparations, 500 destinations, 10,000 weighing records and 1.8 MB serialized document per production.
 
 Font license is included in licenses. PDF font is embedded and loaded with the on-demand report module.
-# PRUMO SYSTEM
 
 ## Segurança de dados e migrações
 
