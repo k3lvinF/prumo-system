@@ -21,3 +21,28 @@ export const productionEntries=sqliteTable('production_entries',{id:text('id').n
 export const technicalSheets=sqliteTable('technical_sheets',{id:text('id').primaryKey(),owner:text('owner').notNull(),name:text('name').notNull(),category:text('category').notNull().default('Preparo'),data:text('data').notNull(),version:integer('version').notNull().default(1),archived:integer('archived').notNull().default(0),updated:text('updated').notNull(),updatedBy:text('updated_by').notNull().default('')},t=>[index('technical_sheets_owner').on(t.owner,t.archived,t.updated)]);
 export const technicalSheetRevisions=sqliteTable('technical_sheet_revisions',{id:text('id').primaryKey(),sheetId:text('sheet_id').notNull(),owner:text('owner').notNull(),revision:integer('revision').notNull(),data:text('data').notNull(),at:text('at').notNull(),account:text('account').notNull()},t=>[uniqueIndex('technical_sheet_revisions_sheet_revision').on(t.sheetId,t.revision),index('technical_sheet_revisions_owner').on(t.owner,t.sheetId,t.revision)]);
 export const equipment=sqliteTable('equipment',{id:text('id').primaryKey(),owner:text('owner').notNull(),name:text('name').notNull(),category:text('category').notNull(),data:text('data').notNull(),version:integer('version').notNull().default(1),archived:integer('archived').notNull().default(0),updated:text('updated').notNull()},t=>[index('equipment_owner').on(t.owner,t.archived,t.updated)]);
+
+// Better Auth tables for the independent deployment. They remain unused while
+// AUTH_MODE is not set to "independent", preserving the current Sites login.
+export const user=sqliteTable('user',{
+  id:text('id').primaryKey(),name:text('name').notNull(),email:text('email').notNull().unique(),
+  emailVerified:integer('email_verified',{mode:'boolean'}).notNull().default(false),image:text('image'),
+  createdAt:integer('created_at',{mode:'timestamp'}).notNull(),updatedAt:integer('updated_at',{mode:'timestamp'}).notNull(),
+  requestedRole:text('requested_role').notNull(),role:text('role').notNull().default('pendente'),status:text('status').notNull().default('pendente'),
+});
+export const session=sqliteTable('session',{
+  id:text('id').primaryKey(),expiresAt:integer('expires_at',{mode:'timestamp'}).notNull(),token:text('token').notNull().unique(),
+  createdAt:integer('created_at',{mode:'timestamp'}).notNull(),updatedAt:integer('updated_at',{mode:'timestamp'}).notNull(),
+  ipAddress:text('ip_address'),userAgent:text('user_agent'),userId:text('user_id').notNull().references(()=>user.id,{onDelete:'cascade'}),
+},t=>[index('session_user_id').on(t.userId)]);
+export const account=sqliteTable('account',{
+  id:text('id').primaryKey(),accountId:text('account_id').notNull(),providerId:text('provider_id').notNull(),
+  userId:text('user_id').notNull().references(()=>user.id,{onDelete:'cascade'}),accessToken:text('access_token'),
+  refreshToken:text('refresh_token'),idToken:text('id_token'),accessTokenExpiresAt:integer('access_token_expires_at',{mode:'timestamp'}),
+  refreshTokenExpiresAt:integer('refresh_token_expires_at',{mode:'timestamp'}),scope:text('scope'),password:text('password'),
+  createdAt:integer('created_at',{mode:'timestamp'}).notNull(),updatedAt:integer('updated_at',{mode:'timestamp'}).notNull(),
+},t=>[index('account_user_id').on(t.userId)]);
+export const verification=sqliteTable('verification',{
+  id:text('id').primaryKey(),identifier:text('identifier').notNull(),value:text('value').notNull(),
+  expiresAt:integer('expires_at',{mode:'timestamp'}).notNull(),createdAt:integer('created_at',{mode:'timestamp'}),updatedAt:integer('updated_at',{mode:'timestamp'}),
+},t=>[index('verification_identifier').on(t.identifier)]);
