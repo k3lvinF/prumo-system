@@ -2,5 +2,5 @@ import {env} from 'cloudflare:workers';
 import {getWorkspaceUser} from '@/app/workspace-auth';
 import {response} from '@/lib/production-api';
 import {structuredCatalogHandlers} from '@/lib/structured-catalog-api';
-export async function GET(){if(!env.DB)return response({error:'Armazenamento indisponível.'},503);return structuredCatalogHandlers(env.DB,getWorkspaceUser,'equipment').GET()}
-export async function POST(req:Request){if(!env.DB)return response({error:'Armazenamento indisponível.'},503);return structuredCatalogHandlers(env.DB,getWorkspaceUser,'equipment').POST(req)}
+export async function GET(){if(!env.DB)return response({error:'Armazenamento indisponível.'},503);return structuredCatalogHandlers(env.DB,()=>getWorkspaceUser('equipment:read'),'equipment').GET()}
+export async function POST(req:Request){if(!env.DB)return response({error:'Armazenamento indisponível.'},503);return structuredCatalogHandlers(env.DB,()=>getWorkspaceUser('equipment:write'),'equipment').POST(req)}
