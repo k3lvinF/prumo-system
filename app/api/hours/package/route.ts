@@ -1,5 +1,5 @@
 import {env} from 'cloudflare:workers';
-import {getChatGPTUser} from '@/app/chatgpt-auth';
+import {getAppUser} from '@/app/app-auth';
 import {limited,resolveOwner,response} from '@/lib/production-api';
 import {makeHoursReport} from '@/lib/hours-report';
 import {bytesStream,zipStream} from '@/lib/hours-zip';
@@ -9,7 +9,7 @@ const weekOf=(millis:number)=>Math.floor((Number(new Intl.DateTimeFormat('en-CA'
 async function mapLimit<T,R>(items:T[],limit:number,work:(item:T)=>Promise<R>){const result=new Array<R>(items.length);let cursor=0;await Promise.all(Array.from({length:Math.min(limit,items.length)},async()=>{while(cursor<items.length){const index=cursor++;result[index]=await work(items[index])}}));return result}
 
 export async function GET(req:Request){try{
-  const u=await getChatGPTUser();if(!u)return response({error:'Acesso não autorizado.'},401);if(!env.DB||!env.BUCKET)return response({error:'Armazenamento indisponível.'},503);
+  const u=await getAppUser();if(!u)return response({error:'Acesso não autorizado.'},401);if(!env.DB||!env.BUCKET)return response({error:'Armazenamento indisponível.'},503);
   const db=env.DB,bucket=env.BUCKET;
   const url=new URL(req.url),id=url.searchParams.get('id'),partText=url.searchParams.get('part'),part=partText===null?null:Number(partText),owner=await resolveOwner(db,u);
   if(!id||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)||part!==null&&(!Number.isInteger(part)||part<1||part>5))return response({error:'Arquivo mensal não encontrado.'},404);
